@@ -152,10 +152,22 @@ abstract contract LensNFTBase is ERC721Enumerable, ILensNFTBase {
         address expectedAddress,
         DataTypes.EIP712Signature calldata sig
     ) internal view {
+        if (!_doesRecoveredAddressMatch(digest, expectedAddress, sig))
+            revert Errors.SignatureInvalid();
+    }
+
+    /**
+     * @dev Wrapper for ecrecover to reduce code size, used in meta-tx specific functions.
+     */
+    function _doesRecoveredAddressMatch(
+        bytes32 digest,
+        address expectedAddress,
+        DataTypes.EIP712Signature calldata sig
+    ) internal view returns (bool) {
         if (sig.deadline < block.timestamp) revert Errors.SignatureExpired();
         address recoveredAddress = ecrecover(digest, sig.v, sig.r, sig.s);
-        if (recoveredAddress == address(0) || recoveredAddress != expectedAddress)
-            revert Errors.SignatureInvalid();
+        if (recoveredAddress == address(0) || recoveredAddress != expectedAddress) return false;
+        return true;
     }
 
     /**
